@@ -43,6 +43,11 @@ class Cryptowatch(Market):
         bids = depth['result']['bids']
         asks = depth['result']['asks']
 
+        if bids[0][0] == 0:
+            bids[0] = bids[1:]
+        if asks[0][0] == 0:
+            asks = asks[1:]
+
         #bids = self.sort_and_format(depth['result']['bids'])
         #asks = self.sort_and_format(depth['result']['asks'])
         return {'asks':asks, 'bids':bids}
