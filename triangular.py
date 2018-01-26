@@ -25,29 +25,33 @@ class Triangular():
     def init_observers(self, _observers):
         if config.demo_mode:
             try:
+                self.loggerList[0].info('Initializing demo bot ...')
                 exec('import observers.logger')
                 observer = eval('observers.logger.Logger()')
                 self.observers.append(observer)
-                self.loggerList[0].info('Initialized demo bot ...')
+                self.loggerList[0].info('Finished initializing demo bot.')
             except(ImportError, AttributeError) as e:
                 self.loggerList[0].error('Couldn\'t initialize demo bot. Are you missing files?')
                 self.loggerList[0].error('Error message: {}'.format(e))
         else:
             for observer_name in _observers: 
                 try:
+                    self.loggerList[0].info('Initializing production bots ...')
                     exec('import observers.' + observer_name.lower())
                     observer = eval('observers.' + observer_name.lower() + '.' + observer_name + '()')
                     self.observers.append(observer)
-                    self.loggerList[0].info('Initialized bots ...')
+                    self.loggerList[0].info('Finished initializing bots.')
                 except(ImportError, AttributeError) as e:
                     self.loggerList[0].error('%s observer name is invalid. Please verify config file.' % observer_name)  
                     self.loggerList[0].error('Error message: {}'.format(e))  
 
     def init_market(self, market):
         try:
+            self.loggerList[0].info('Importing public markets ...')
             exec('import public_markets.' + market.lower())
             m = eval('public_markets.' + market.lower() + '.' + market + '()')
             self.market = m
+            self.loggerList[0].info('Finished importing markets.')
         except(ImportError, AttributeError) as e:
             self.loggerList[0].error('Failed to import market: {}'.format(m))
             self.loggerList[0].error('Error: {}'.format(e))
@@ -123,7 +127,7 @@ class Triangular():
         self.loggerList[0].debug('----------------------RESULTS------------------------')
         for pairs in triangles:
             futures.append(self.threadpool.submit(self.__get_triangle_results, pairs, results))
-        wait(futures, timeout=2)
+        wait(futures, timeout=3)
         return results
                 
     def loop(self):
@@ -173,7 +177,7 @@ class Triangle():
         vol = 0
         value = 0
         i = 0
-        amount = amount - (amount * self.fee)
+        #amount = amount - (amount * self.fee)
 
         if side == 'buy':
             while i < len(orders['asks']) and value < amount: #check if amount being bought is larger than trade size
@@ -182,7 +186,7 @@ class Triangle():
                 value += this_value
                 vol += this_vol
                 i += 1
-            return value / vol, vol
+            return value / vol, vol - (vol * self.fee)
 
         else:
             while i < len(orders['bids']) and value < amount:
@@ -191,7 +195,7 @@ class Triangle():
                 value += this_value
                 vol += this_vol
                 i += 1
-            return value, vol
+            return value, vol - (vol * self.fee)
        
     def main(self, logger):
         self.depths = self.get_data()
@@ -215,11 +219,11 @@ class Triangle():
             phaseThree = 'buy'
 
             # for Coinbase
-            if firstProduct not in self.triangle_pairs[0][:3]:
+            if firstProduct in self.triangle_pairs[0][:3]:
                 phaseOne = 'sell'
-            if self.triangle_pairs[1][:3] not in self.triangle_pairs[0]:
+            if self.triangle_pairs[1][:3] in self.triangle_pairs[0]:
                 phaseTwo = 'sell'
-            if self.triangle_pairs[2][:3] not in self.triangle_pairs[1]:
+            if self.triangle_pairs[2][:3] in self.triangle_pairs[1]:
                 phaseThree = 'sell'
             
             # case 1: btc -> 2nd product -> 3rd product -> btc
