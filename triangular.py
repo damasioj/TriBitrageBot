@@ -116,8 +116,8 @@ class Triangular():
         if self.bookData != {}:
             self.loggerList[0].info('----------------------PRICES-------------------------')
             for item in self.bookData:
-                self.loggerList[0].info('{} : {:0.4f}'.format(item, ((self.bookData[item]['bids'][0][0] +
-                                                                      self.bookData[item]['asks'][0][0]) / 2)))
+                self.loggerList[0].info('{} : {:0.4f}'.format(item, ((self.bookData[item]['bids'][0]['price'] +
+                                                                      self.bookData[item]['asks'][0]['price']) / 2)))
             self.loggerList[0].info('-----------------------------------------------------')
 
     def update_cases(self, triangles):
@@ -181,8 +181,8 @@ class Triangle():
 
         if side == 'buy':
             while i < len(orders['asks']) and value < amount: #check if amount being bought is larger than trade size
-                this_value = min(orders['asks'][i][0] * orders['asks'][i][1], amount - value) # get total amount being sold
-                this_vol = this_value / orders['asks'][i][0] # convert currency
+                this_value = min(orders['asks'][i]['price'] * orders['asks'][i]['amount'], amount - value) # get total amount being sold
+                this_vol = this_value / orders['asks'][i]['price'] # convert currency
                 value += this_value
                 vol += this_vol
                 i += 1
@@ -190,8 +190,8 @@ class Triangle():
 
         else:
             while i < len(orders['bids']) and value < amount:
-                this_value = min(orders['bids'][i][1], amount - value)
-                this_vol = this_value * orders['bids'][i][0]
+                this_value = min(orders['bids'][i]['amount'], amount - value)
+                this_vol = this_value * orders['bids'][i]['price']
                 value += this_value
                 vol += this_vol
                 i += 1

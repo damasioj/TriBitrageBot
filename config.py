@@ -1,7 +1,7 @@
 # public market information
 # currently using cryptowatch because the GDAX api gives wrong price ????
 # options: Coinbase, Bitfinex, Cryptowatch
-market = 'Cryptowatch'
+market = 'Coinbase'
 
 market_expiration_time = 2 # how long to wait for orders to fill before cancel
 market_reset_time = 45 # if bot cannot access market, it will wait to reset

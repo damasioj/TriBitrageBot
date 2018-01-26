@@ -33,7 +33,7 @@ class Coinbase(Market):
         #print(self.depth)
 
     def sort_and_format(self, l): #format the ticker/trade
-        l.sort(key=lambda x: float(x[0]))
+        #l.sort(key=lambda x: float(x[0]))
         r = []
         for i in l:
             r.append({'price': float(i[0]), 'amount': float(i[1])})	
