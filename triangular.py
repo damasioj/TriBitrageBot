@@ -2,14 +2,22 @@ import config
 import sys
 import os
 import logging
+import logging.config
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
 
+
 class Triangular():
+    # list of available loggers to use
+    # 0 main : adds to log & console
+    # 1 opportunity : adds to opportunities log
+    loggerList = []
+    
     def __init__(self):
         self.observers = []
         self.symbols = config.symbols
         self.bookData = []
+        self.init_logger()
         self.threadpool = ThreadPoolExecutor(max_workers=1) # number of symbols
         self.init_observers(config.observers)
         self.init_market(config.market)
@@ -20,20 +28,20 @@ class Triangular():
                 exec('import observers.logger')
                 observer = eval('observers.logger.Logger()')
                 self.observers.append(observer)
-                logging.info('Initialized demo bot ...')
+                self.loggerList[0].info('Initialized demo bot ...')
             except(ImportError, AttributeError) as e:
-                logging.error('Couldn\'t initialize demo bot. Are you missing files?')  
-                logging.error('Error message: {}'.format(e))
+                self.loggerList[0].error('Couldn\'t initialize demo bot. Are you missing files?')
+                self.loggerList[0].error('Error message: {}'.format(e))
         else:
             for observer_name in _observers: 
                 try:
                     exec('import observers.' + observer_name.lower())
                     observer = eval('observers.' + observer_name.lower() + '.' + observer_name + '()')
                     self.observers.append(observer)
-                    logging.info('Initialized bots ...')
+                    self.loggerList[0].info('Initialized bots ...')
                 except(ImportError, AttributeError) as e:
-                    logging.error('%s observer name is invalid. Please verify config file.' % observer_name)  
-                    logging.error('Error message: {}'.format(e))  
+                    self.loggerList[0].error('%s observer name is invalid. Please verify config file.' % observer_name)  
+                    self.loggerList[0].error('Error message: {}'.format(e))  
 
     def init_market(self, market):
         try:
@@ -42,6 +50,12 @@ class Triangular():
             self.market = m
         except(ImportError, AttributeError) as e:
             print('%s market name is invalid' % m)
+
+    def init_logger(self):
+        logging.config.fileConfig('logger.config')
+        logger = logging.getLogger('main_logger')
+        o_logger = logging.getLogger('opportunity_logger')
+        self.loggerList = [logger, o_logger]
 
     def __get_triangle_pairs(self):
         pairs = []
@@ -84,11 +98,11 @@ class Triangular():
                         break
                 if config.currency_pairs['all'].index(pair2) == numOfPairs:
                         break
-        logging.info('------------------------------------------------------')
-        logging.info('---------------------TRIANGLES------------------------')
+        self.loggerList[0].info('------------------------------------------------------')
+        self.loggerList[0].info('---------------------TRIANGLES------------------------')
         for i in pairs:
-            logging.info(i)
-        logging.info('------------------------------------------------------')
+            self.loggerList[0].info(i)
+        self.loggerList[0].info('------------------------------------------------------')
         return pairs          
 
     def __get_triangle_results(self, pairs, results):
@@ -97,10 +111,10 @@ class Triangular():
     def _get_market_data(self):
         self.bookData = self.market.update_depth()
         if self.bookData != {}:
-            logging.info('----------------------PRICES-------------------------')
+            self.loggerList[0].info('----------------------PRICES-------------------------')
             for item in self.bookData:
-                logging.info('{} : {:0.4f}'.format(item, ((self.bookData[item]['bids'][0][0] + self.bookData[item]['asks'][0][0]) / 2))) 
-            logging.info('-----------------------------------------------------')
+                self.loggerList[0].info('{} : {:0.4f}'.format(item, ((self.bookData[item]['bids'][0][0] + self.bookData[item]['asks'][0][0]) / 2))) 
+            self.loggerList[0].info('-----------------------------------------------------')
 
     def update_cases(self, triangles):
         futures = []
@@ -120,20 +134,21 @@ class Triangular():
             if self.bookData != {}:
                 config.market_reset_time = 0
                 self.triangles = self.update_cases(triangles)
-                logging.info('-----------------------------------------------------')
+                self.loggerList[0].info('-----------------------------------------------------')
                 item = sorted(self.triangles.items(), key=lambda x: x[1]['profit'], reverse=True)
                 if item != [] and item[0][1]['profit'] > 0:
                     for pair in item:
                         if pair[1]['profit'] > 0:
                             item2 = [(pair[0], pair[1])] #simplifying item dict
                             for observer in self.observers:
-                                observer.opportunity(item2)  
+                                observer.opportunity(item2, self.loggerList)
                         else:
-                            logging.info('-----------------------------------------------------')
+                            self.loggerList[0].info('-----------------------------------------------------')
+                            self.loggerList[1].info('-----------------------------------------------------')
                             break
                 else:
-                    logging.info('No opportunity found.')
-                    logging.info('-----------------------------------------------------')
+                    self.loggerList[0].info('No opportunity found.')
+                    self.loggerList[0].info('-----------------------------------------------------')
                 time.sleep(config.refresh_rate + config.market_reset_time)
 
 

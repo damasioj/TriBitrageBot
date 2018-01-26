@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import os
 import sys
 import config
@@ -8,20 +9,23 @@ class Run():
     def __init__(self):    
         pass
 
+
     def create_triangular(self):
         self.triangular = Triangular()
+
 
     def exec_command(self):
         config.demo_mode = True
         self.create_triangular()
         self.triangular.loop()
+    
 
-    def init_logger(self):
-        level = logging.DEBUG
-        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=level)
-
+    #def init_logger(self):
+    #    logging.config.fileConfig('logger.config')
+    #    logger = logging.getLogger('main_logger')
+    
     def main(self):
-        self.init_logger()
+        #self.init_logger()
         self.exec_command()    
 
 
