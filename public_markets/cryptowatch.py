@@ -30,22 +30,24 @@ class Cryptowatch(Market):
                 return book
             book.update({pair : self.format_depth(depth)})
         return book
-        #print(self.depth)
 
-    def sort_and_format(self, l): #format the ticker/trade
-        l.sort(key=lambda x: float(x[1]))
-        r = []
-        for i in l:
-            r.append({'price': float(i[0]), 'amount': float(i[1])})	
-        return r
+    # format and sort book
+    # the book has to be in the following format to work with triangular class:
+    # book['bids/asks'][x]['price/amount']
+    def sort_and_format(self, section):
+        #l.sort(key=lambda x: float(x[1]))
+        section_formatted = []
+        for i in section:
+            section_formatted.append({'price': float(i[0]), 'amount': float(i[1])})
+        return section_formatted
 
     def format_depth(self, depth):
-        bids = depth['result']['bids']
-        asks = depth['result']['asks']
+        bids = self.sort_and_format(depth['result']['bids'])
+        asks = self.sort_and_format(depth['result']['asks'])
 
-        if bids[0][0] == 0:
+        if bids[0]['price'] == 0:
             bids[0] = bids[1:]
-        if asks[0][0] == 0:
+        if asks[0]['price'] == 0:
             asks = asks[1:]
 
         #bids = self.sort_and_format(depth['result']['bids'])
