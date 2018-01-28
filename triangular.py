@@ -15,6 +15,7 @@ class Triangular():
     
     def __init__(self):
         self.observers = []
+        self.public_market = ''
         self.symbols = config.symbols
         self.bookData = []
         self.init_logger()
@@ -51,6 +52,12 @@ class Triangular():
             exec('import public_markets.' + market.lower())
             m = eval('public_markets.' + market.lower() + '.' + market + '()')
             self.market = m
+
+            # if market == 'Cryptowatch':
+            #     self.public_market = 'coinbase'
+            # else:
+            #     self.public_market = market.lower()
+
             self.loggerList[0].info('Finished importing markets.')
         except(ImportError, AttributeError) as e:
             self.loggerList[0].error('Failed to import market: {}'.format(m))
@@ -63,10 +70,11 @@ class Triangular():
         self.loggerList = [logger, o_logger]
 
     def __get_triangle_pairs(self):
+        # gets all possible triangle pairs in the given list of symbols from config.currency_pairs
         pairs = []
         first = config.currency_pref
-        numOfPairs = len(config.currency_pairs['all']) - 1
-        for pair in config.currency_pairs['all']:
+        numOfPairs = len(config.currency_pairs[config.symbols]) - 1
+        for pair in config.currency_pairs[config.symbols]:
             if first in pair:
                 if first in pair[:3]:
                     second = pair[-3:]
@@ -75,31 +83,31 @@ class Triangular():
             else:
                 continue
             while True:
-                for pair2 in config.currency_pairs['all']:
+                for pair2 in config.currency_pairs[config.symbols]:
                     if second in pair2 and first not in pair2:
                         if second in pair2[:3]:
                             third = pair2[-3:]
                             while True:
-                                for pair3 in config.currency_pairs['all']:
+                                for pair3 in config.currency_pairs[config.symbols]:
                                     if third in pair3 and first in pair3:
                                         pairs.append([pair, pair2, pair3])
-                                    if config.currency_pairs['all'].index(pair3) == numOfPairs:
+                                    if config.currency_pairs[config.symbols].index(pair3) == numOfPairs:
                                         break
-                                if config.currency_pairs['all'].index(pair3) == numOfPairs:
+                                if config.currency_pairs[config.symbols].index(pair3) == numOfPairs:
                                         break
                         else:
                             third = pair2[:3]
                             while True:
-                                for pair3 in config.currency_pairs['all']:
+                                for pair3 in config.currency_pairs[config.symbols]:
                                     if third in pair3 and first in pair3:
                                         pairs.append([pair, pair2, pair3])
-                                    if config.currency_pairs['all'].index(pair3) == numOfPairs:
+                                    if config.currency_pairs[config.symbols].index(pair3) == numOfPairs:
                                         break
-                                if config.currency_pairs['all'].index(pair3) == numOfPairs:
+                                if config.currency_pairs[config.symbols].index(pair3) == numOfPairs:
                                         break
-                    if config.currency_pairs['all'].index(pair2) == numOfPairs:
+                    if config.currency_pairs[config.symbols].index(pair2) == numOfPairs:
                         break
-                if config.currency_pairs['all'].index(pair2) == numOfPairs:
+                if config.currency_pairs[config.symbols].index(pair2) == numOfPairs:
                         break
         self.loggerList[0].info('------------------------------------------------------')
         self.loggerList[0].info('---------------------TRIANGLES------------------------')
@@ -177,7 +185,7 @@ class Triangle():
         vol = 0
         value = 0
         i = 0
-        #amount = amount - (amount * self.fee)
+        # amount = amount - (amount * self.fee)
 
         if side == 'buy':
             while i < len(orders['asks']) and value < amount: #check if amount being bought is larger than trade size

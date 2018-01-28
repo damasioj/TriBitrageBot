@@ -8,15 +8,15 @@ from .market import Market
 
 class Coinbase(Market):
     def __init__(self):
-        super().__init__()
+        #super().__init__()
         self.depths = {}
-        for pair in config.currency_pairs['all']:
+        for pair in config.currency_pairs['gdax']:
             self.depths.update({pair : 'https://api.gdax.com/products/{}-{}/book?level=2'.format(pair[:3].upper(), pair[-3:].upper())})
 
     def update_depth(self):
         book = {}
         for pair in self.depths:
-            url = self.depths[pair];
+            url = self.depths[pair]
             req = urllib.request.Request(url,headers={
                 "Content-Type": "application/json",
                 "Accept": "*/*",
