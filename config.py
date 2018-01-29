@@ -1,15 +1,17 @@
 # public market information
-# currently using cryptowatch because the GDAX api gives wrong price ????
 # options: Coinbase, Bitfinex, Cryptowatch
-market = 'Bitfinex'
+market = 'Coinbase'
+
+# private market used to define the one you trade in
+# options: gdax, bitfinex
+private_market = 'gdax'
 
 market_expiration_time = 2 # how long to wait for orders to fill before cancel
 market_reset_time = 45 # if bot cannot access market, it will wait to reset
 order_type = 'market' # options: market, limit
 
 # currency to start triangles with (for bitfinex you must use USD or crypto)
-# also used for displaying results
-currency_pref = 'usd'
+currency_pref = 'btc'
 
 currency_pairs = {
 	'gdax':['btceur', 'ltcbtc', 'ltceur', 'ethbtc', 'etheur'],
@@ -17,17 +19,16 @@ currency_pairs = {
 	}
 
 # currency pairs to be used
-symbols = 'bitfinex'
+symbols = 'gdax'
 
 # amount of currency to validate
 # uses preferred currency
-min_amount = 20 # min amount of bitcoin to validate
-max_amount = 200 # max amount of bitcoin to validate
-increment = 10
+min_amount = 0.0055
+max_amount = 0.1
+increment = 0.0165
 
 # loop check to avoid block
-refresh_rate = 8
-
+refresh_rate = 2
 
 # desired minimum profit in percentage (0.01 = 1%)
 min_profit = 0.0001
@@ -35,11 +36,13 @@ min_profit = 0.0001
 # terminates the program if the bot loses this amount from starting balance (because of delays or incorrect values); uses the preferred currency
 stop_bot_loss = 0.005
 
-# transaction fee; standard taker fee = 0.25% (gdax)
-fee = 0.0025
+# transaction fee
+# gdax : 0.3%
+# bitfinex : 0.2%
+fee = 0.003
 slippage = 1
 
-# used for private account info
+# used for connecting to authenticated services
 # options: Coinbase_Trader, Traderbot_Finex
 observers = [
 'Coinbase_Trader'
@@ -51,5 +54,3 @@ demo_mode = False
 ACCESS_KEY = ''
 SECRET_KEY = ''
 PASSPHRASE = ''
-
-

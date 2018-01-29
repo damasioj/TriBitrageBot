@@ -8,9 +8,10 @@ from .market import Market
 
 
 class Bitfinex(Market):
-    def __init__(self):
+    def __init__(self, logger):
         #super().__init__()
         self.depths = {}
+        self.logger = logger[0]
         for pair in config.currency_pairs['bitfinex']:
             self.depths.update({pair : 'https://api.bitfinex.com/v1/book/{}'.format(pair.lower())})
 
@@ -26,8 +27,8 @@ class Bitfinex(Market):
                 res = urllib.request.urlopen(req)
                 depth = json.loads(res.read().decode('utf8'))
             except Exception as e:
-                logging.error('Error getting market data:')
-                logging.error(e)
+                self.logger.error('Error getting market data:')
+                self.logger.error(e)
                 return book
             book.update({symbol : self.format_depth(depth)})
         return book

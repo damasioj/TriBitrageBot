@@ -7,9 +7,10 @@ import logging
 from .market import Market
 
 class Coinbase(Market):
-    def __init__(self):
+    def __init__(self, logger):
         #super().__init__()
         self.depths = {}
+        self.logger = logger[0]
         for pair in config.currency_pairs['gdax']:
             self.depths.update({pair : 'https://api.gdax.com/products/{}-{}/book?level=2'.format(pair[:3].upper(), pair[-3:].upper())})
 
@@ -25,8 +26,8 @@ class Coinbase(Market):
                 res = urllib.request.urlopen(req)
                 depth = json.loads(res.read().decode('utf8'))
             except Exception as e:
-                logging.error('Error getting market data:')
-                logging.error(e)
+                self.logger.error('Error getting market data:')
+                self.logger.error(e)
                 return book
             book.update({pair : self.format_depth(depth)})
         return book

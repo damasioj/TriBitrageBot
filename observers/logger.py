@@ -1,4 +1,5 @@
 import logging
+import config
 from .observer import Observer
 
 
