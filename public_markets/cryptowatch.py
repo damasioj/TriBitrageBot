@@ -8,16 +8,17 @@ from .market import Market
 
 
 class Cryptowatch(Market):
-    def __init__(self):
+    def __init__(self, logger):
         #super().__init__()
         self.depths = {}
-        for pair in config.currency_pairs['gdax']:
-            self.depths.update({pair : 'https://api.cryptowat.ch/markets/gdax/{}{}/orderbook'.format(pair[:3].lower(),
-                                                                                                     pair[-3:].lower())})
-
+        self.logger = logger[0]
+        for pair in config.currency_pairs[config.symbols]:
+            self.depths.update({pair : 'https://api.cryptowat.ch/markets/{}/{}/orderbook'.format(config.private_market.lower(),
+                                                                                                 pair.lower())})
 
     def update_depth(self):
         book = {}
+        allowance = 0
         for pair in self.depths:
             url = self.depths[pair]
             req = urllib.request.Request(url,headers={
@@ -28,12 +29,13 @@ class Cryptowatch(Market):
                 res = urllib.request.urlopen(req)
                 depth = json.loads(res.read().decode('utf8'))
             except Exception as e:
-                logging.error('Error getting market data:')
-                logging.error(e)
+                self.logger.error('Error getting market data:')
+                self.logger.error(e)
                 return book
+            allowance = depth['allowance']['remaining']
             book.update({pair : self.format_depth(depth)})
+        self.logger.info('Allowance left: {}'.format(allowance))
         return book
-
 
     # format and sort book
     # the book has to be in the following format to work with triangular class:
@@ -44,7 +46,6 @@ class Cryptowatch(Market):
         for i in section:
             section_formatted.append({'price': float(i[0]), 'amount': float(i[1])})
         return section_formatted
-
 
     def format_depth(self, depth):
         bids = self.sort_and_format(depth['result']['bids'])

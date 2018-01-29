@@ -50,7 +50,7 @@ class Triangular():
         try:
             self.loggerList[0].info('Importing public markets ...')
             exec('import public_markets.' + market.lower())
-            m = eval('public_markets.' + market.lower() + '.' + market + '()')
+            m = eval('public_markets.' + market.lower() + '.' + market + '(self.loggerList)')
             self.market = m
 
             # if market == 'Cryptowatch':
@@ -181,66 +181,71 @@ class Triangle():
                 depths.update({pair : self.data[pair]})
         return depths
 
-    def pricer(self, orders, amount, side):
+    def pricer(self, triangle, amount, side, fee):
         vol = 0
         value = 0
         i = 0
-        # amount = amount - (amount * self.fee)
+        prepay = False
+
+        # used in cases where the fee must be discounted from the amount bought (i.e. bitfinex model)
+        if config.private_market.lower() == 'bitfinex':
+            prepay = True
+            amount = amount - (amount * self.fee)
 
         if side == 'buy':
-            while i < len(orders['asks']) and value < amount: #check if amount being bought is larger than trade size
-                this_value = min(orders['asks'][i]['price'] * orders['asks'][i]['amount'], amount - value) # get total amount being sold
-                this_vol = this_value / orders['asks'][i]['price'] # convert currency
+            while i < len(self.depths[triangle]['asks']) and value < amount: # check if amount being bought is larger than trade size
+                this_value = min(self.depths[triangle]['asks'][i]['price'] * self.depths[triangle]['asks'][i]['amount'], amount - value) # get total amount being sold
+                this_vol = this_value / self.depths[triangle]['asks'][i]['price'] # convert currency
                 value += this_value
                 vol += this_vol
                 i += 1
-            return value / vol, vol - (vol * self.fee)
+            if prepay:
+                return value / vol, vol
+            return value / vol, vol - (vol * fee)
 
         else:
-            while i < len(orders['bids']) and value < amount:
-                this_value = min(orders['bids'][i]['amount'], amount - value)
-                this_vol = this_value * orders['bids'][i]['price']
+            while i < len(self.depths[triangle]['bids']) and value < amount:
+                this_value = min(self.depths[triangle]['bids'][i]['amount'], amount - value)
+                this_vol = this_value * self.depths[triangle]['bids'][i]['price']
                 value += this_value
                 vol += this_vol
                 i += 1
-            return value, vol - (vol * self.fee)
+            if prepay:
+                return value, vol
+            return value, vol - (vol * fee)
        
     def main(self, logger):
         self.depths = self.get_data()
 
-        firstTickOrders = self.depths[self.triangle_pairs[0]]
-        secondTickOrders = self.depths[self.triangle_pairs[1]]
-        thirdTickOrders = self.depths[self.triangle_pairs[2]]
-        
+        # Used to define the flow of the trade
+        phases = ['buy', 'buy', 'buy']
+        firstProduct = config.currency_pref
+        if firstProduct in self.triangle_pairs[0][:3]:
+            phases[0] = 'sell'
+        if self.triangle_pairs[1][:3] in self.triangle_pairs[0]:
+            phases[1] = 'sell'
+        if self.triangle_pairs[2][:3] in self.triangle_pairs[1]:
+            phases[2] = 'sell'
+
         amt = config.min_amount
         best_case = 0
         results = []
         while amt <= config.max_amount:
-            # CASE 1
-            # Used to define the flow of the trade
-            # True = bid price, False = ask price
-            # For example: Ticker BTCUSD means price is in USD and bid would mean buying BTC
-            # If we want to sell BTC. We need ask price for first phase.
-            firstProduct = config.currency_pref
-            phaseOne = 'buy'
-            phaseTwo = 'buy'
-            phaseThree = 'buy'
 
-            # for Coinbase
-            if firstProduct in self.triangle_pairs[0][:3]:
-                phaseOne = 'sell'
-            if self.triangle_pairs[1][:3] in self.triangle_pairs[0]:
-                phaseTwo = 'sell'
-            if self.triangle_pairs[2][:3] in self.triangle_pairs[1]:
-                phaseThree = 'sell'
-            
-            # case 1: btc -> 2nd product -> 3rd product -> btc
-            firstBalance = self.pricer(firstTickOrders, amt, phaseOne)
-            secondBalance = self.pricer(secondTickOrders, firstBalance[1], phaseTwo)
-            finalBalance = self.pricer(thirdTickOrders, secondBalance[1], phaseThree)
+            # calculate final balance
+            balance = amt
+            for i in range(3):
+                # check if using gdax and current trade is btceur
+                if self.triangle_pairs[i] == 'btceur' and config.private_market.lower() == 'gdax':
+                    fee = 0.0025
+                else:
+                    fee = self.fee
+
+                new_balance = self.pricer(self.triangle_pairs[i], balance, phases[i], fee)
+                balance = new_balance[1]
             
             best_profit = 0
-            c1_profit = finalBalance[1] - amt
+            c1_profit = balance - amt
             c1_profit_percent = (c1_profit / amt) * 100
 
             results.append(round(c1_profit_percent, 2))
