@@ -1,10 +1,9 @@
-# public market information
-# options: Coinbase, Bitfinex, Cryptowatch
+# market information
+# options: Coinbase, Bitfinex
 market = 'Coinbase'
 
-# private market used to define the one you trade in
-# options: gdax, bitfinex
-private_market = 'gdax'
+# secondary market sources
+sec_markets = ['Cryptowatch']
 
 market_expiration_time = 2 # how long to wait for orders to fill before cancel
 market_reset_time = 45 # if bot cannot access market, it will wait to reset
@@ -15,7 +14,7 @@ currency_pref = 'btc'
 
 currency_pairs = {
 	'gdax':['btceur', 'ltcbtc', 'ltceur', 'ethbtc', 'etheur'],
-        'bitfinex':['btcusd', 'btceur', 'ltcusd', 'ltcbtc', 'ethusd', 'ethbtc', 'xrpusd', 'xrpbtc']
+	'bitfinex':['btcusd', 'btceur', 'ltcusd', 'ltcbtc', 'ethusd', 'ethbtc', 'xrpusd', 'xrpbtc']
 	}
 
 # currency pairs to be used

@@ -12,8 +12,9 @@ class Cryptowatch(Market):
         #super().__init__()
         self.depths = {}
         self.logger = logger[0]
+        market = config.market if config.market != 'Coinbase' else 'gdax'
         for pair in config.currency_pairs[config.symbols]:
-            self.depths.update({pair : 'https://api.cryptowat.ch/markets/{}/{}/orderbook'.format(config.private_market.lower(),
+            self.depths.update({pair : 'https://api.cryptowat.ch/markets/{}/{}/orderbook'.format(market.lower(),
                                                                                                  pair.lower())})
 
     def update_depth(self):

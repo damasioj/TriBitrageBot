@@ -8,20 +8,21 @@ from concurrent.futures import ThreadPoolExecutor, wait
 
 
 class Triangular():
-    # list of available loggers to use
-    # 0 main : adds to log & console
-    # 1 opportunity : adds to opportunities log
-    loggerList = []
+    #loggerList = []
     
     def __init__(self):
         self.observers = []
         self.public_market = ''
         self.symbols = config.symbols
         self.bookData = []
+        self.loggerList = []
         self.init_logger()
         self.threadpool = ThreadPoolExecutor(max_workers=1) # number of symbols
         self.init_observers(config.observers)
-        self.init_market(config.market)
+        self.init_market(config.market, config.sec_markets)
+        self.loggerList[0].info('Utilizing {} symbols'.format(config.symbols))
+        self.use_primary_market = True
+        self.time_awaited = 0
 
     def init_observers(self, _observers):
         if config.demo_mode:
@@ -36,31 +37,34 @@ class Triangular():
                 self.loggerList[0].error('Error message: {}'.format(e))
         else:
             for observer_name in _observers: 
+                self.loggerList[0].info('Initializing production bots ...')
                 try:
-                    self.loggerList[0].info('Initializing production bots ...')
                     exec('import observers.' + observer_name.lower())
                     observer = eval('observers.' + observer_name.lower() + '.' + observer_name + '()')
                     self.observers.append(observer)
-                    self.loggerList[0].info('Finished initializing bots.')
+                    self.loggerList[0].info('Finished initializing bot: {}'.format(observer_name))
                 except(ImportError, AttributeError) as e:
                     self.loggerList[0].error('%s observer name is invalid. Please verify config file.' % observer_name)  
                     self.loggerList[0].error('Error message: {}'.format(e))  
 
-    def init_market(self, market):
+    def init_market(self, market, secondary_markets):
+        self.loggerList[0].info('Importing public markets ...')
+        self.market = []
         try:
-            self.loggerList[0].info('Importing public markets ...')
-            exec('import public_markets.' + market.lower())
-            m = eval('public_markets.' + market.lower() + '.' + market + '(self.loggerList)')
-            self.market = m
+            exec('import public_markets.' + market.lower() + ', public_markets.cryptowatch')
 
-            # if market == 'Cryptowatch':
-            #     self.public_market = 'coinbase'
-            # else:
-            #     self.public_market = market.lower()
+            # import market
+            main = eval('public_markets.' + market.lower() + '.' + market + '(self.loggerList)')
+            self.market.append(main)
+            self.loggerList[0].info('Finished importing public market: {}'.format(market))
 
-            self.loggerList[0].info('Finished importing markets.')
+            # import secondary market sources
+            for site in secondary_markets:
+                secondary = eval('public_markets.' + site.lower() + '.' + site + '(self.loggerList)')
+                self.market.append(secondary)
+                self.loggerList[0].info('Finished importing public market: {}'.format(site))
         except(ImportError, AttributeError) as e:
-            self.loggerList[0].error('Failed to import market: {}'.format(m))
+            self.loggerList[0].error('Failed to import public market.')
             self.loggerList[0].error('Error: {}'.format(e))
 
     def init_logger(self):
@@ -120,13 +124,19 @@ class Triangular():
         results[','.join(pairs)] = Triangle(pairs, self.bookData).main(self.loggerList)
 
     def _get_market_data(self):
-        self.bookData = self.market.update_depth()
+        if self.use_primary_market:
+            self.bookData = self.market[0].update_depth()
+        else:
+            self.bookData = self.market[1].update_depth()
         if self.bookData != {}:
             self.loggerList[0].info('----------------------PRICES-------------------------')
             for item in self.bookData:
                 self.loggerList[0].info('{} : {:0.4f}'.format(item, ((self.bookData[item]['bids'][0]['price'] +
                                                                       self.bookData[item]['asks'][0]['price']) / 2)))
             self.loggerList[0].info('-----------------------------------------------------')
+        else:
+            self.use_primary_market = False # alternate to secondary market
+            self.time_awaited = time.time()
 
     def update_cases(self, triangles):
         futures = []
@@ -139,13 +149,14 @@ class Triangular():
         return results
                 
     def loop(self):
+        if time.time() - self.time_awaited < config.market_expiration_time:
+            self.use_primary_market = True
         triangles = self.__get_triangle_pairs()
         while True:
             if not config.demo_mode:
                 self.observers[0].check_wallets()
             self._get_market_data()
             if self.bookData != {}:
-                config.market_reset_time = 0
                 self.triangles = self.update_cases(triangles)
                 self.loggerList[0].info('-----------------------------------------------------')
                 item = sorted(self.triangles.items(), key=lambda x: x[1]['profit'], reverse=True)
@@ -162,7 +173,8 @@ class Triangular():
                 else:
                     self.loggerList[0].info('No opportunity found.')
                     self.loggerList[0].info('-----------------------------------------------------')
-                time.sleep(config.refresh_rate + config.market_reset_time)
+                time.sleep(config.refresh_rate)
+
 
 
 class Triangle():
@@ -188,7 +200,7 @@ class Triangle():
         prepay = False
 
         # used in cases where the fee must be discounted from the amount bought (i.e. bitfinex model)
-        if config.private_market.lower() == 'bitfinex':
+        if config.market.lower() == 'bitfinex':
             prepay = True
             amount = amount - (amount * self.fee)
 
@@ -236,7 +248,7 @@ class Triangle():
             balance = amt
             for i in range(3):
                 # check if using gdax and current trade is btceur
-                if self.triangle_pairs[i] == 'btceur' and config.private_market.lower() == 'gdax':
+                if self.triangle_pairs[i] == 'btceur' and config.market.lower() == 'coinbase':
                     fee = 0.0025
                 else:
                     fee = self.fee
