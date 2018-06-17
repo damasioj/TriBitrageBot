@@ -1,6 +1,6 @@
 # market information
 # options: Coinbase, Bitfinex
-market = 'Coinbase'
+market = 'Bitfinex'
 
 # secondary market sources
 sec_markets = ['Cryptowatch']
@@ -13,18 +13,18 @@ order_type = 'market' # options: market, limit
 currency_pref = 'btc'
 
 currency_pairs = {
-	'gdax':['btceur', 'ltcbtc', 'ltceur', 'ethbtc', 'etheur'],
+	'gdax':['btceur', 'ltcbtc', 'ltceur', 'ethbtc', 'etheur', 'bcheur', 'bchbtc'],
 	'bitfinex':['btcusd', 'btceur', 'ltcusd', 'ltcbtc', 'ethusd', 'ethbtc', 'xrpusd', 'xrpbtc']
 	}
 
 # currency pairs to be used
-symbols = 'gdax'
+symbols = 'bitfinex'
 
 # amount of currency to validate
 # uses preferred currency
 min_amount = 0.0055
 max_amount = 0.1
-increment = 0.0165
+increment = 0.02
 
 # loop check to avoid block
 refresh_rate = 2
@@ -38,16 +38,17 @@ stop_bot_loss = 0.005
 # transaction fee
 # gdax : 0.3%
 # bitfinex : 0.2%
-fee = 0.003
+fee = 0.002
 slippage = 1
 
 # used for connecting to authenticated services
 # options: Coinbase_Trader, Traderbot_Finex
 observers = [
-'Coinbase_Trader'
+'Traderbot_Finex'
 ]
 
 demo_mode = False
+socket = "ws_gdax"
 
 # Key info
 ACCESS_KEY = ''

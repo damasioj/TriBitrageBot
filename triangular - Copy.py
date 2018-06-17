@@ -6,7 +6,6 @@ import logging.config
 import time
 import gdax
 import json
-from websocket_api.websocket_base import WebsocketClient_GDAX as wcg
 from concurrent.futures import ThreadPoolExecutor, wait
 
 
@@ -55,17 +54,8 @@ class Triangular():
         self.market = []
         try:
             self.loggerList[0].info("Starting public socket")
-            #exec('import websocket_api.websocket_base')
-            #ws_client = eval('websocket_api.websocket_base.WebsocketClient_GDAX(url="wss://ws-feed.gdax.com", products="BTC-EUR")')
-
-            # add main websocket support
-            self.market.append(wcg(url="wss://ws-feed.gdax.com", products="BTC-EUR", channels=["level2"]))
-            self.market[0].__init_logger__(self.loggerList[0])
-            self.market[0].max_amount = config.max_amount
-
-            #self.market.append(ws_client)
-            #self.market.append(gdax.OrderBook("BTC-EUR"))
-            #self.market.
+            self.market.append(gdax.WebsocketClient(url="wss://ws-feed.gdax.com", products="BTC-EUR"))
+            self.market.append(gdax.OrderBook("BTC-EUR"))
             return
             
             exec('import public_markets.' + market.lower() + ', public_markets.cryptowatch')
@@ -179,7 +169,7 @@ class Triangular():
             time.sleep(5)
             self.loggerList[0].info("Order book: " + str(self.market[1].get_ask()))
             #self.loggerList[0].info("Main: " + self.market[0].
-            time.sleep(20)
+            time.sleep(10)
             self.market[0].close()
             self.market[1].close()
             if self.bookData != {}:

@@ -19,11 +19,6 @@ class Run():
         self.create_triangular()
         self.triangular.loop()
     
-
-    #def init_logger(self):
-    #    logging.config.fileConfig('logger.config')
-    #    logger = logging.getLogger('main_logger')
-    
     def main(self):
         #self.init_logger()
         self.exec_command()    
